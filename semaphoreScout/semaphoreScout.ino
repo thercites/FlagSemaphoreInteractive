@@ -6,8 +6,8 @@
 // illegal letters H,I,O,W,X,Z
 
 #include <avr/wdt.h>
-#include <LedControl.h>
-#include <fonts.h>
+#include "LedControl.h"
+#include "fonts.h"
 #include "ElapsedTime.h"
 #include <Servo.h> 
 
@@ -24,7 +24,8 @@ const int matrixLoad = 10;
 const int matrixClock = 11;
 const int matrixData = 12;
 
-const int displayPause = 4000;
+//const int promptInterval = 60000;
+const int displayPause = 2000;
 
 const char *startChars = ".xX.xX.xX";
 const char *finishChars = "Vv.Vv.Vv.";
@@ -112,11 +113,6 @@ void setup() {
   ltArmServo.attach(servoLt); 
   rtArmServo.attach(servoRt);
  
-  zeroArms();
-  delay(150);
-  restArms();
-  delay(150);
-  
   resetTouchSwitch();
   randomSeed(analogRead(0));
   
@@ -128,25 +124,20 @@ void loop() {
   wdt_reset();
   
   if(digitalRead(touch) == HIGH) {
-     // show waking up
+     const char * word;
+     // give feedback
      showString(startChars, 250);
-     wdt_reset();
-     // get the word
-     const char* word = wordList[random(0, wordListLength)];
-     wdt_reset();
+     // choose a word
+     word = wordList[random(0,wordListLength)];
      // quiz the word
      quizString(word, displayPause);
-     wdt_reset();
-     // relax the arms
-     restArms();
-     wdt_reset();
-     // reprise the word
+     // show the word
      showString(word, displayPause);
-     wdt_reset();
-     // finish
+     restArms();
+     matrix.clearDisplay(0);
+     delay(displayPause/2);
      showString(finishChars, 250);
-     wdt_reset();
-     // set short timer to remind to play again
+     // reset the timer
      timer.startTimer(10000); 
   }
   else {
@@ -208,19 +199,14 @@ void moveLtArm(int pos) {
 
 void moveRtArm(int pos) {
   digitalWrite(led,HIGH);
-  setRelativeServoPosition(rtArmServo, armSpeed, (180 - pos));
+  setRelativeServoPosition(rtArmServo, armSpeed, (uu-pos));
   delay(20); 
   digitalWrite(led,LOW);  
 }
 
 void restArms(void){
-  moveLtArm(dd);
-  moveRtArm(dd);
-}
-
-void zeroArms(void){
-    ltArmServo.write(0);
-    rtArmServo.write(0);  
+  moveLtArm(0);
+  moveRtArm(0);
 }
 
 void setRelativeServoPosition(Servo & servo, int rate, int pos) {
